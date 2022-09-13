@@ -1,20 +1,51 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
-import { Form, Button, Input, Modal, InputGroup, IconButton } from "rsuite";
+import {
+  Form,
+  Button,
+  Modal,
+  InputGroup,
+  IconButton,
+  Tooltip,
+  Whisper,
+} from "rsuite";
 import { model } from "./FormSchema";
-import AvatarIcon from "@rsuite/icons/legacy/Avatar";
+import EyeIcon from "@rsuite/icons/legacy/Eye";
+import EyeSlashIcon from "@rsuite/icons/legacy/EyeSlash";
+import { withModals } from "~/utils";
+
 import GearIcon from "@rsuite/icons/Gear";
 
-export default function RegisterForm() {
+function RegisterForm({ onSubmit, isAdmin, openModal }) {
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState({});
+  const [visible, setVisible] = useState(false);
+  const [disabled, setDisabled] = useState(true);
+  const [isLoginFail, setLoginFail] = useState(false);
+
   const [formValue, setFormValue] = useState({
-    name: "",
-    surname: "",
-    contact: "",
+    username: "",
+    password: "",
   });
 
+  useEffect(() => {
+    if (
+      Object.keys(formError).length === 0 &&
+      formValue.username !== "" &&
+      formValue.password !== ""
+    ) {
+      setDisabled(false);
+    } else {
+      setDisabled(true);
+    }
+  }, [formValue, formError]);
+
   const handleClose = useCallback(() => {
+    setFormValue({
+      username: "",
+      password: "",
+    });
+    setFormError({});
     setOpen(false);
   }, []);
 
@@ -22,17 +53,14 @@ export default function RegisterForm() {
     setOpen(true);
   }, []);
 
-  const onChangeForm = useCallback(
-    (e) => {
-      if (formValue.contact === e?.contact) {
-        setFormValue(e);
-      } else {
-        if (/^[0-9]*$/.test(e?.contact) && e?.contact.length <= 10)
-          setFormValue(e);
-      }
-    },
-    [formValue]
-  );
+  const onPressSubmit = useCallback(() => {
+    onSubmit(formValue.username, formValue.password)
+      .then(() => {
+        handleClose();
+        openModal("สำเร็จ", "เข้าสู่ระบบสำเร็จ", true);
+      })
+      .catch(() => setLoginFail(true));
+  }, [formValue]);
 
   return (
     <>
@@ -41,40 +69,56 @@ export default function RegisterForm() {
           <Modal.Title className="font-IBM pb-1">
             เข้าสู่ระบบการจัดการ
           </Modal.Title>
+          {isLoginFail && (
+            <p className="font-IBM text-rose-500">เข้าสู่ระบบไม่สำเร็จ</p>
+          )}
         </Modal.Header>
         <Modal.Body>
           <Form
             fluid
-            onChange={onChangeForm}
+            onChange={setFormValue}
             formValue={formValue}
+            onFocus={() => setLoginFail(false)}
             onCheck={setFormError}
             model={model}
             className="font-IBM"
           >
-            <Form.Group controlId="name-1">
-              <Form.ControlLabel>ชื่อ</Form.ControlLabel>
-              <Form.Control name="name" />
+            <Form.Group controlId="username-1">
+              <Form.ControlLabel>Username</Form.ControlLabel>
+              <Form.Control
+                name="username"
+                className={isLoginFail ? "border-rose-500" : ""}
+              />
               <Form.HelpText>Required</Form.HelpText>
             </Form.Group>
-            <Form.Group controlId="surname-1">
-              <Form.ControlLabel>นามสกุล</Form.ControlLabel>
-              <Form.Control name="surname" />
-            </Form.Group>
-
-            <Form.Group controlId="contact-1">
-              <Form.ControlLabel>เบอร์ติดต่อ</Form.ControlLabel>
-              <InputGroup>
-                <InputGroup.Addon>
-                  <AvatarIcon />
-                </InputGroup.Addon>
-                <Form.Control name="contact" type="tel" />
+            <Form.Group controlId="password-1">
+              <Form.ControlLabel>Password</Form.ControlLabel>
+              <InputGroup
+                inside
+                className={isLoginFail ? "border-rose-500" : ""}
+              >
+                <Form.Control
+                  name="password"
+                  type={visible ? "text" : "password"}
+                />
+                <InputGroup.Button onClick={() => setVisible((prev) => !prev)}>
+                  {visible ? <EyeIcon /> : <EyeSlashIcon />}
+                </InputGroup.Button>
               </InputGroup>
+
               <Form.HelpText>Required</Form.HelpText>
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button onClick={handleClose} appearance="subtle" color="blue" active>
+          <Button
+            onClick={onPressSubmit}
+            appearance="subtle"
+            type="submit"
+            color="blue"
+            active
+            disabled={disabled}
+          >
             ตกลง
           </Button>
           <Button onClick={handleClose} appearance="subtle">
@@ -82,11 +126,23 @@ export default function RegisterForm() {
           </Button>
         </Modal.Footer>
       </Modal>
-      <IconButton
-        size="lg"
-        icon={<GearIcon color="white" />}
-        onClick={handleOpen}
-      />
+
+      <Whisper
+        disabled={!isAdmin}
+        placement="left"
+        controlId="control-id-active"
+        trigger="active"
+        className="mr-4"
+        speaker={<Tooltip className="font-IBM">เข้าสู่ระบบแล้ว</Tooltip>}
+      >
+        <IconButton
+          size="lg"
+          icon={<GearIcon color="white" />}
+          onClick={() => !isAdmin && handleOpen()}
+        />
+      </Whisper>
     </>
   );
 }
+
+export default withModals(RegisterForm);

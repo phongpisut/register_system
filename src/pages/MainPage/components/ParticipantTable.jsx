@@ -5,11 +5,10 @@ import SearchIcon from "@rsuite/icons/Search";
 
 const { Column, HeaderCell, Cell } = Table;
 
-export default function ParticipantTable() {
+export default function ParticipantTable({ userData, isAdmin }) {
   const [sortColumn, setSortColumn] = useState();
   const [sortType, setSortType] = useState();
   const [loading, setLoading] = useState(false);
-  const { userData } = useDataContext();
   const [filterData, setFilterData] = useState(userData);
   const [searchText, setSearchText] = useState("");
 
@@ -20,6 +19,14 @@ export default function ParticipantTable() {
       return x.charCodeAt();
     } else return x;
   }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    setFilterData(userData);
+    setTimeout(() => {
+      setLoading(false);
+    }, 1000);
+  }, [userData]);
 
   useEffect(() => {
     searchText !== ""
@@ -79,9 +86,13 @@ export default function ParticipantTable() {
       </InputGroup>
 
       <Table
+        style={{ maxHeight: 350, overflow: "scroll" }}
+        wordWrap="break-word"
         data={filterData}
         sortColumn={sortColumn}
         sortType={sortType}
+        rowHeight={60}
+        autoHeight
         onSortColumn={handleSortColumn}
         loading={loading}
       >
@@ -97,7 +108,12 @@ export default function ParticipantTable() {
 
         <Column flexGrow={1} sortable align="center">
           <HeaderCell>Tel</HeaderCell>
-          <Cell dataKey="tel" />
+          <Cell
+            dataKey="tel"
+            renderCell={(e) => {
+              return isAdmin ? e : e?.replace(e.substring(2, 8), "XXXXXX");
+            }}
+          />
         </Column>
       </Table>
     </>

@@ -1,17 +1,42 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
-import { Form, Button, Input, Modal, InputGroup } from "rsuite";
+import {
+  Form,
+  Button,
+  Modal,
+  InputGroup,
+  IconButton,
+  Tooltip,
+  Whisper,
+} from "rsuite";
 import { model } from "./FormSchema";
+import PlusRoundIcon from "@rsuite/icons/PlusRound";
 import AvatarIcon from "@rsuite/icons/legacy/Avatar";
 
-export default function RegisterForm() {
+import { withModals } from "~/utils";
+
+function RegisterForm({ remaining, openModal, addData }) {
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState({});
+  const [disabled, setDisabled] = useState(true);
   const [formValue, setFormValue] = useState({
     name: "",
     surname: "",
-    contact: "",
+    tel: "",
   });
+
+  useEffect(() => {
+    if (
+      Object.keys(formError).length === 0 &&
+      formValue.name !== "" &&
+      formValue.surname !== "" &&
+      formValue.tel !== ""
+    ) {
+      setDisabled(false);
+    } else {
+      setDisabled(true);
+    }
+  }, [formValue, formError]);
 
   const handleClose = useCallback(() => {
     setOpen(false);
@@ -23,15 +48,23 @@ export default function RegisterForm() {
 
   const onChangeForm = useCallback(
     (e) => {
-      if (formValue.contact === e?.contact) {
+      if (formValue.tel === e?.tel) {
         setFormValue(e);
       } else {
-        if (/^[0-9]*$/.test(e?.contact) && e?.contact.length <= 10)
-          setFormValue(e);
+        if (/^[0-9]*$/.test(e?.tel) && e?.tel.length <= 10) setFormValue(e);
       }
     },
     [formValue]
   );
+
+  const onSubmit = useCallback(() => {
+    addData(formValue)
+      .then(() => {
+        handleClose();
+        openModal("สำเร็จ", "เพิ่มข้อมูลสำเร็จ", true);
+      })
+      .catch((e) => openModal("เกิดข้อผิดพลาด", "เพิ่มข้อมูลไม่สำเร็จ", false));
+  }, [formValue]);
 
   return (
     <>
@@ -56,22 +89,29 @@ export default function RegisterForm() {
             <Form.Group controlId="surname-1">
               <Form.ControlLabel>นามสกุล</Form.ControlLabel>
               <Form.Control name="surname" />
+              <Form.HelpText>Required</Form.HelpText>
             </Form.Group>
 
-            <Form.Group controlId="contact-1">
+            <Form.Group controlId="tel-1">
               <Form.ControlLabel>เบอร์ติดต่อ</Form.ControlLabel>
               <InputGroup>
                 <InputGroup.Addon>
                   <AvatarIcon />
                 </InputGroup.Addon>
-                <Form.Control name="contact" type="tel" />
+                <Form.Control name="tel" type="tel" />
               </InputGroup>
               <Form.HelpText>Required</Form.HelpText>
             </Form.Group>
           </Form>
         </Modal.Body>
         <Modal.Footer>
-          <Button onClick={handleClose} appearance="subtle" color="blue" active>
+          <Button
+            onClick={onSubmit}
+            appearance="subtle"
+            color="blue"
+            active
+            disabled={disabled}
+          >
             ตกลง
           </Button>
           <Button onClick={handleClose} appearance="subtle">
@@ -79,7 +119,26 @@ export default function RegisterForm() {
           </Button>
         </Modal.Footer>
       </Modal>
-      <Button onClick={handleOpen}>New User</Button>
+      <Whisper
+        disabled={remaining > 0}
+        placement="right"
+        controlId="control-id-active"
+        trigger="active"
+        speaker={<Tooltip className="font-IBM">ที่นั่งเต็มแล้ว</Tooltip>}
+      >
+        <IconButton
+          className={`ml-2 ${remaining > 0 ? "opacity-100" : "opacity-50"}`}
+          icon={<PlusRoundIcon />}
+          size="md"
+          color={"green"}
+          active
+          appearance="primary"
+          circle
+          onClick={() => remaining > 0 && handleOpen()}
+        />
+      </Whisper>
     </>
   );
 }
+
+export default withModals(RegisterForm);
