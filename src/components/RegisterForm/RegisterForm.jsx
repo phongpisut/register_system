@@ -15,7 +15,7 @@ import AvatarIcon from "@rsuite/icons/legacy/Avatar";
 
 import { withModals } from "~/utils";
 
-function RegisterForm({ remaining, openModal, addData }) {
+function RegisterForm({ remaining, openModal, addData, openSeat }) {
   const [open, setOpen] = useState(false);
   const [formError, setFormError] = useState({});
   const [disabled, setDisabled] = useState(true);
@@ -58,7 +58,7 @@ function RegisterForm({ remaining, openModal, addData }) {
   );
 
   const onSubmit = useCallback(() => {
-    addData(formValue)
+    addData({ ...formValue, seat: openSeat[0] })
       .then(() => {
         handleClose();
         openModal("สำเร็จ", "เพิ่มข้อมูลสำเร็จ", true);

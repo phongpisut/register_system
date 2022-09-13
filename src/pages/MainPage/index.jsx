@@ -17,6 +17,9 @@ export default function LoginPages() {
     isAdmin,
     login,
     updateMaximum,
+    editSeat,
+    acquiredSeat,
+    openSeat,
     addData,
   } = useDataContext();
 
@@ -44,7 +47,11 @@ export default function LoginPages() {
               <Col xs={20} sm={20} md={15} lg={15} xl={15}>
                 <div className="flex justify-between mb-1 items-center">
                   <Suspense>
-                    <RegisterForm remaining={remaining} addData={addData} />
+                    <RegisterForm
+                      remaining={remaining}
+                      addData={addData}
+                      openSeat={openSeat}
+                    />
                   </Suspense>
 
                   <RemainingSeat
@@ -58,7 +65,13 @@ export default function LoginPages() {
 
                 <Row>
                   <div className="drop-shadow-md rounded bg-white w-full h-full p-2">
-                    <ParticipantTable userData={userData} isAdmin={isAdmin} />
+                    <ParticipantTable
+                      userData={userData}
+                      isAdmin={isAdmin}
+                      acquiredSeat={acquiredSeat}
+                      max={max}
+                      editSeat={editSeat}
+                    />
                   </div>
                 </Row>
               </Col>

@@ -19,6 +19,8 @@ export const DataProvider = ({ children }) => {
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [auth, setAuth] = useState({ username: "", password: "", id: "" });
+  const [acquiredSeat, setAcquiredSeat] = useState([]);
+  const [openSeat, setOpenSeat] = useState([]);
 
   const login = useCallback(
     (username = "", password = "") =>
@@ -28,7 +30,7 @@ export const DataProvider = ({ children }) => {
           "Authorization",
           "Basic " + window.btoa(username + ":" + password)
         );
-        fetch("http://localhost:6220/getSetting", {
+        fetch("http://192.168.1.55:6220/getSetting", {
           headers: headers,
           method: "GET",
         })
@@ -52,6 +54,36 @@ export const DataProvider = ({ children }) => {
     [setAuth]
   );
 
+  const getUserData = useCallback(() => {
+    fetch("http://192.168.1.55:6220/userList", {
+      method: "GET",
+    })
+      .then((res) => res.json())
+      .then((result) => {
+        const { settings, users } = result?.data;
+        const { maximum } = settings;
+        if (users?.length > 0) {
+          let newUserData = users.slice(0, maximum);
+          let safeMaximum = maximum || 10;
+          const acquire = users.map((x) => x.seat);
+          const open = [...Array(maximum)]
+            .map((_, i) => i + 1)
+            .filter((x) => !acquire.includes(x));
+
+          setAcquiredSeat(acquire);
+          setOpenSeat(open);
+
+          setData({
+            userData: newUserData,
+            count: newUserData.length,
+            remaining: safeMaximum - newUserData.length,
+            max: safeMaximum,
+          });
+        }
+      })
+      .catch((e) => e);
+  }, [setData, setAcquiredSeat, setOpenSeat]);
+
   const updateMaximum = useCallback(
     (maximum) =>
       new Promise((resolve, reject) => {
@@ -62,7 +94,7 @@ export const DataProvider = ({ children }) => {
         );
         headers.set("Content-Type", "application/json");
 
-        fetch(`http://localhost:6220/editSetting/${auth.id}`, {
+        fetch(`http://192.168.1.55:6220/editSetting/${auth.id}`, {
           headers: headers,
 
           method: "PUT",
@@ -71,18 +103,7 @@ export const DataProvider = ({ children }) => {
           .then((res) => res.json())
           .then((result) => {
             if (result.status === 200) {
-              const { maximum } = result?.data?.data;
-              if (data?.userData.length > 0) {
-                if (maximum >= 0) {
-                  let newUserData = data?.userData.slice(0, maximum);
-                  setData({
-                    userData: newUserData,
-                    count: newUserData.length,
-                    remaining: maximum - newUserData.length,
-                    max: maximum,
-                  });
-                }
-              }
+              getUserData();
               resolve(result);
             } else {
               reject();
@@ -90,30 +111,8 @@ export const DataProvider = ({ children }) => {
           })
           .catch((e) => reject(e));
       }),
-    [auth]
+    [auth, getUserData]
   );
-
-  const getUserData = useCallback(() => {
-    fetch("http://localhost:6220/userList", {
-      method: "GET",
-    })
-      .then((res) => res.json())
-      .then((result) => {
-        const { settings, users } = result?.data;
-        const { maximum } = settings;
-        if (users?.length > 0) {
-          let newUserData = users.slice(0, maximum);
-          let safeMaximum = maximum || 10;
-          setData({
-            userData: newUserData,
-            count: newUserData.length,
-            remaining: safeMaximum - newUserData.length,
-            max: safeMaximum,
-          });
-        }
-      })
-      .catch((e) => e);
-  }, [setData]);
 
   const addData = useCallback(
     (formData) =>
@@ -121,7 +120,7 @@ export const DataProvider = ({ children }) => {
         let headers = new Headers();
         headers.set("Content-Type", "application/json");
 
-        fetch(`http://localhost:6220/addUser`, {
+        fetch(`http://192.168.1.55:6220/addUser`, {
           headers: headers,
           method: "POST",
           body: JSON.stringify(formData),
@@ -141,13 +140,51 @@ export const DataProvider = ({ children }) => {
     [getUserData]
   );
 
+  const editSeat = useCallback(
+    (user) =>
+      new Promise((resolve, reject) => {
+        let headers = new Headers();
+        headers.set(
+          "Authorization",
+          "Basic " + window.btoa(auth.username + ":" + auth.password)
+        );
+        headers.set("Content-Type", "application/json");
+
+        fetch(`http://192.168.1.55:6220/editUser/${user.id}`, {
+          headers: headers,
+          method: "PUT",
+          body: JSON.stringify(user),
+        })
+          .then((res) => res.json())
+          .then((result) => {
+            if (result.status === 200) {
+              getUserData();
+              resolve();
+            } else {
+              reject();
+            }
+          })
+          .catch((e) => reject(e));
+      }),
+    [auth, getUserData]
+  );
+
   useEffect(() => {
     getUserData();
   }, []);
 
   return (
     <DataContext.Provider
-      value={{ ...data, isAdmin, login, updateMaximum, addData }}
+      value={{
+        ...data,
+        isAdmin,
+        login,
+        updateMaximum,
+        addData,
+        acquiredSeat,
+        openSeat,
+        editSeat,
+      }}
     >
       {children}
     </DataContext.Provider>

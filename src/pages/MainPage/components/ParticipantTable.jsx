@@ -1,16 +1,26 @@
-import { useCallback, useState, useEffect } from "react";
-import { Table, Input, InputGroup } from "rsuite";
+import { useCallback, useState, useEffect, useMemo } from "react";
+import { Table, Input, InputGroup, Modal, Button } from "rsuite";
 import { useDataContext } from "~/utils";
 import SearchIcon from "@rsuite/icons/Search";
 
 const { Column, HeaderCell, Cell } = Table;
 
-export default function ParticipantTable({ userData, isAdmin }) {
+export default function ParticipantTable({
+  userData,
+  isAdmin,
+  max,
+  acquiredSeat,
+  editSeat,
+}) {
   const [sortColumn, setSortColumn] = useState();
   const [sortType, setSortType] = useState();
   const [loading, setLoading] = useState(false);
   const [filterData, setFilterData] = useState(userData);
   const [searchText, setSearchText] = useState("");
+  const [openEditSeat, setOpenEditSeat] = useState(false);
+  const [currentSeat, setCurrentSeat] = useState(0);
+  const [oldSeat, setOldSeat] = useState(0);
+  const [selectedUser, setSelectedUser] = useState({});
 
   const getType = useCallback((x) => {
     if (!isNaN(x)) {
@@ -76,8 +86,88 @@ export default function ParticipantTable({ userData, isAdmin }) {
     [sortColumn, sortType, filterData, getData]
   );
 
+  const onEditSeat = useCallback(
+    (e) => {
+      setSelectedUser(filterData.find((x) => x.seat == e));
+      setOldSeat(Number(e));
+      setCurrentSeat(Number(e));
+      setOpenEditSeat(true);
+    },
+    [filterData]
+  );
+
+  const onSelectSeat = useCallback(
+    (i) => {
+      setCurrentSeat(i + 1);
+    },
+    [currentSeat]
+  );
+
+  const onSubmit = useCallback(() => {
+    if (oldSeat !== currentSeat) {
+      editSeat({ ...selectedUser, seat: currentSeat }).then(() =>
+        setOpenEditSeat(false)
+      );
+    }
+  }, [oldSeat, currentSeat, selectedUser]);
+
+  const getSeatColor = useCallback(
+    (i) => {
+      if (i + 1 == currentSeat) {
+        return "green";
+      }
+      return "blue";
+    },
+    [currentSeat]
+  );
+
+  const getDisable = useCallback(
+    (i) => {
+      if (acquiredSeat.includes(i + 1) && i + 1 == currentSeat) {
+        return false;
+      } else if (acquiredSeat.includes(i + 1) && i + 1 !== oldSeat) {
+        return true;
+      }
+    },
+    [currentSeat, acquiredSeat, oldSeat]
+  );
+
   return (
     <>
+      <Modal
+        open={openEditSeat}
+        onClose={() => setOpenEditSeat(false)}
+        size="xs"
+      >
+        <Modal.Header>
+          <Modal.Title className="font-IBM">เลือกที่นั่ง</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="grid grid-cols-5 grid-flow-row justify-items-center gap-2 px-2">
+          {max > 0 &&
+            [...Array(max)].map((x, i) => (
+              <Button
+                key={`seat-${i}`}
+                appearance="primary"
+                onClick={() => onSelectSeat(i)}
+                color={getSeatColor(i)}
+                disabled={getDisable(i)}
+                active
+                className={`w-11`}
+                size="md"
+              >
+                <p>{i + 1}</p>
+              </Button>
+            ))}
+        </Modal.Body>
+        <Modal.Footer className="py-2">
+          <Button appearance="subtle" color="blue" active onClick={onSubmit}>
+            ตกลง
+          </Button>
+          <Button onClick={() => setOpenEditSeat(false)} appearance="subtle">
+            ยกเลิก
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <InputGroup>
         <Input onChange={(e) => setSearchText(e)} />
         <InputGroup.Addon>
@@ -94,20 +184,48 @@ export default function ParticipantTable({ userData, isAdmin }) {
         rowHeight={60}
         autoHeight
         onSortColumn={handleSortColumn}
+        className="font-IBM"
         loading={loading}
       >
+        <Column width={65} sortable fixed align="center">
+          <HeaderCell>ที่นั่ง</HeaderCell>
+          <Cell
+            dataKey="seat"
+            renderCell={(e) => {
+              return isAdmin ? (
+                <Button
+                  onClick={() => onEditSeat(e)}
+                  appearance="subtle"
+                  color={`${Number(e) > max ? "red" : "cyan"}`}
+                  active
+                >
+                  <p>{e}</p>
+                </Button>
+              ) : (
+                <p
+                  className={`${
+                    Number(e) > max ? "text-rose-500" : ""
+                  } text-current`}
+                >
+                  {e}
+                </p>
+              );
+            }}
+          />
+        </Column>
+
         <Column flexGrow={1} sortable align="center">
-          <HeaderCell>Name</HeaderCell>
+          <HeaderCell>ชื่อ</HeaderCell>
           <Cell dataKey="name" />
         </Column>
 
         <Column flexGrow={1} sortable align="center">
-          <HeaderCell>Surname</HeaderCell>
+          <HeaderCell>นามสกุล</HeaderCell>
           <Cell dataKey="surname" />
         </Column>
 
         <Column flexGrow={1} sortable align="center">
-          <HeaderCell>Tel</HeaderCell>
+          <HeaderCell>เบอร์โทร</HeaderCell>
           <Cell
             dataKey="tel"
             renderCell={(e) => {
