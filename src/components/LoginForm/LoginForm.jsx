@@ -136,6 +136,7 @@ function RegisterForm({ onSubmit, isAdmin, openModal }) {
         speaker={<Tooltip className="font-IBM">เข้าสู่ระบบแล้ว</Tooltip>}
       >
         <IconButton
+          aria-label="register button"
           size="lg"
           icon={<GearIcon color="white" />}
           onClick={() => !isAdmin && handleOpen()}

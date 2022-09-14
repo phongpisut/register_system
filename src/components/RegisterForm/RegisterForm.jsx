@@ -127,6 +127,7 @@ function RegisterForm({ remaining, openModal, addData, openSeat }) {
         speaker={<Tooltip className="font-IBM">ที่นั่งเต็มแล้ว</Tooltip>}
       >
         <IconButton
+          aria-label="config button"
           className={`ml-2 ${remaining > 0 ? "opacity-100" : "opacity-50"}`}
           icon={<PlusRoundIcon />}
           size="md"

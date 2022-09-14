@@ -77,6 +77,7 @@ export default function RemainingSeat({
         </div>
         <div className="flex-row flex justify-items-center pr-1 mt-1 w-36">
           <Progress.Line
+            aria-label="progress bar"
             percent={(count * 100) / max}
             showInfo={false}
             strokeColor={getStatusBarColor}

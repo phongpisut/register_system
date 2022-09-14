@@ -1,5 +1,5 @@
 import { Schema } from "rsuite";
-const { StringType, NumberType } = Schema.Types;
+const { StringType } = Schema.Types;
 
 export const model = Schema.Model({
   name: StringType().isRequired("กรุณากรอกข้อมูลชื่อ."),

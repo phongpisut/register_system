@@ -1,16 +1,18 @@
-import { useCallback, useState, useEffect, useMemo } from "react";
+import { useCallback, useState, useEffect } from "react";
 import { Table, Input, InputGroup, Modal, Button } from "rsuite";
-import { useDataContext } from "~/utils";
 import SearchIcon from "@rsuite/icons/Search";
+import { withModals } from "~/utils";
 
 const { Column, HeaderCell, Cell } = Table;
 
-export default function ParticipantTable({
+function ParticipantTable({
   userData,
   isAdmin,
   max,
   acquiredSeat,
   editSeat,
+  openConfirm,
+  isConfirm,
 }) {
   const [sortColumn, setSortColumn] = useState();
   const [sortType, setSortType] = useState();
@@ -21,6 +23,7 @@ export default function ParticipantTable({
   const [currentSeat, setCurrentSeat] = useState(0);
   const [oldSeat, setOldSeat] = useState(0);
   const [selectedUser, setSelectedUser] = useState({});
+  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
 
   const getType = useCallback((x) => {
     if (!isNaN(x)) {
@@ -39,6 +42,12 @@ export default function ParticipantTable({
   }, [userData]);
 
   useEffect(() => {
+    if (userData.find((x) => x.seat > max)) {
+      alert("มีจำนวนผู้ลงทะเบียนที่นั่งเกินจำนวน!");
+    }
+  }, [userData, max]);
+
+  useEffect(() => {
     searchText !== ""
       ? setFilterData(
           userData.filter(
@@ -50,6 +59,15 @@ export default function ParticipantTable({
         )
       : setFilterData(userData);
   }, [searchText]);
+
+  useEffect(() => {
+    function handleResize() {
+      setWindowHeight(window.innerHeight);
+    }
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const getData = useCallback(
     (_sortColumn, _sortType) => {
@@ -105,11 +123,17 @@ export default function ParticipantTable({
 
   const onSubmit = useCallback(() => {
     if (oldSeat !== currentSeat) {
+      openConfirm("กรุณายืนยัน", "ท่านยืนยันที่จะเปลี่ยนที่นั่งหรือไม่?");
+    }
+  }, [oldSeat, currentSeat, selectedUser, openConfirm]);
+
+  useEffect(() => {
+    if (isConfirm) {
       editSeat({ ...selectedUser, seat: currentSeat }).then(() =>
         setOpenEditSeat(false)
       );
     }
-  }, [oldSeat, currentSeat, selectedUser]);
+  }, [isConfirm]);
 
   const getSeatColor = useCallback(
     (i) => {
@@ -169,14 +193,17 @@ export default function ParticipantTable({
         </Modal.Footer>
       </Modal>
       <InputGroup>
-        <Input onChange={(e) => setSearchText(e)} />
+        <Input onChange={(e) => setSearchText(e)} aria-label="search box" />
         <InputGroup.Addon>
           <SearchIcon />
         </InputGroup.Addon>
       </InputGroup>
 
       <Table
-        style={{ maxHeight: 350, overflow: "scroll" }}
+        style={{
+          overflow: "scroll",
+          maxHeight: windowHeight / 2.2,
+        }}
         wordWrap="break-word"
         data={filterData}
         sortColumn={sortColumn}
@@ -184,7 +211,7 @@ export default function ParticipantTable({
         rowHeight={60}
         autoHeight
         onSortColumn={handleSortColumn}
-        className="font-IBM"
+        className="font-IBM text-base"
         loading={loading}
       >
         <Column width={65} sortable fixed align="center">
@@ -237,3 +264,5 @@ export default function ParticipantTable({
     </>
   );
 }
+
+export default withModals(ParticipantTable);

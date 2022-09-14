@@ -127,7 +127,6 @@ export const DataProvider = ({ children }) => {
         })
           .then((res) => res.json())
           .then((result) => {
-            console.log(result);
             if (result.status === 201) {
               getUserData();
               resolve();

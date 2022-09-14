@@ -1,4 +1,3 @@
-import { useState, Suspense } from "react";
 import { Content, Container, Grid, Row, Col, Header } from "rsuite";
 import { RegisterForm, LoginForm } from "~/components";
 import PlusRoundIcon from "@rsuite/icons/PlusRound";
@@ -26,9 +25,7 @@ export default function LoginPages() {
   return (
     <div className="bg-gradient-to-t from-blue-600 to-sky-700  w-screen h-screen pt-20 flex">
       <div className="absolute top-0 right-0 m-5 animate-pulse ">
-        <Suspense>
-          <LoginForm onSubmit={login} isAdmin={isAdmin} />
-        </Suspense>
+        <LoginForm onSubmit={login} isAdmin={isAdmin} />
       </div>
       <Container>
         <Header>
@@ -46,13 +43,11 @@ export default function LoginPages() {
             <Row className="show-grid place-content-center items-center flex">
               <Col xs={20} sm={20} md={15} lg={15} xl={15}>
                 <div className="flex justify-between mb-1 items-center">
-                  <Suspense>
-                    <RegisterForm
-                      remaining={remaining}
-                      addData={addData}
-                      openSeat={openSeat}
-                    />
-                  </Suspense>
+                  <RegisterForm
+                    remaining={remaining}
+                    addData={addData}
+                    openSeat={openSeat}
+                  />
 
                   <RemainingSeat
                     max={max}
